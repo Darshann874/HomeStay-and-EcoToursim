@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoStay | AI-Powered Homestay & Eco-Tourism</title>
+    <!-- CSS stylesheet link -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+    <div id="app-container">
+        <!-- Main Navigation Bar -->
+        <header>
+            <nav class="navbar">
+                <a href="#" class="logo" onclick="app.navigateTo('explore')">
+                    <i data-lucide="leaf"></i> EcoStay
+                </a>
+                <ul class="nav-links">
+                    <li><a class="nav-link active" id="nav-explore" onclick="app.navigateTo('explore')">Explore</a></li>
+                    <li><a class="nav-link" id="nav-tourist-db" style="display:none;" onclick="app.navigateTo('tourist-db')">My Trips</a></li>
+                    <li><a class="nav-link" id="nav-owner-db" style="display:none;" onclick="app.navigateTo('owner-db')">Host Dashboard</a></li>
+                    <li><a class="nav-link" id="nav-auth" onclick="app.navigateTo('auth')">Login / Sign Up</a></li>
+                    <li id="nav-user-badge" style="display:none;">
+                        <div class="user-badge">
+                            <i data-lucide="user" style="width:16px; height:16px;"></i>
+                            <span id="nav-user-name">Guest</span>
+                            <a href="#" onclick="app.logout()" style="color:var(--secondary); margin-left: 0.5rem; font-size: 0.8rem; text-decoration:none;">Logout</a>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <!-- Dynamic Main Views -->
+        <main>
+            <!-- 1. EXPLORE PAGE VIEW -->
+            <section id="page-explore" class="page active">
+                <div class="search-section glass-panel">
+                    <h1 class="search-title">Discover Sustainable Stays</h1>
+                    <div class="search-box-row">
+                        <div class="search-input-wrapper">
+                            <i data-lucide="search" class="search-icon"></i>
+                            <input type="text" id="search-input" class="form-control" placeholder="Search by name, location, or features..." oninput="app.fetchHomestays()">
+                        </div>
+                        <div style="width: 200px;">
+                            <select id="filter-location" class="form-control select-control" onchange="app.fetchHomestays()">
+                                <option value="">All Locations</option>
+                                <option value="Himalayas">Himalayas</option>
+                                <option value="Kerala Backwaters">Kerala Backwaters</option>
+                                <option value="Goa Beach">Goa Beach</option>
+                                <option value="Rajasthan Desert">Rajasthan Desert</option>
+                                <option value="Western Ghats">Western Ghats</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="filters-row">
+                        <div class="filter-group">
+                            <span class="filter-label">Max Price per night: $<span id="price-val">200</span></span>
+                            <input type="range" id="filter-price" class="range-slider" min="30" max="200" value="200" oninput="document.getElementById('price-val').innerText = this.value; app.fetchHomestays();">
+                        </div>
+                        <div class="filter-group">
+                            <span class="filter-label">Min Rating:</span>
+                            <select id="filter-rating" class="form-control select-control" style="width: 110px; padding: 0.4rem 0.8rem;" onchange="app.fetchHomestays()">
+                                <option value="">Any</option>
+                                <option value="4.0">4.0+ ★</option>
+                                <option value="4.5">4.5+ ★</option>
+                                <option value="4.8">4.8+ ★</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <span class="filter-label">Eco-Features:</span>
+                            <select id="filter-eco" class="form-control select-control" style="width: 160px; padding: 0.4rem 0.8rem;" onchange="app.fetchHomestays()">
+                                <option value="">All Stays</option>
+                                <option value="Solar Power">Solar Power</option>
+                                <option value="Organic Garden">Organic Garden</option>
+                                <option value="Rainwater Harvesting">Rainwater Harvesting</option>
+                                <option value="Zero Waste">Zero Waste</option>
+                                <option value="Local Clay">Local Materials</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Recommendation Input Box -->
+                <div class="ai-recommendation-box glass-panel">
+                    <div class="ai-header">
+                        <i data-lucide="sparkles"></i>
+                        <span>AI Preference Assistant</span>
+                    </div>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Describe your dream trip (e.g. "cooking organic local meals close to a water view with solar energy") and watch the system match the best stays.</p>
+                    <div class="ai-inputs">
+                        <input type="text" id="ai-preference-input" class="ai-pref-input" placeholder="Type what you want to experience...">
+                        <button class="btn btn-primary" onclick="app.getAIRecommendations()">
+                            <i data-lucide="zap"></i> Find Match
+                        </button>
+                        <button class="btn btn-secondary" onclick="app.clearAIRecommendations()">Reset</button>
+                    </div>
+                </div>
+
+                <div id="homestays-container" class="homestay-grid">
+                    <!-- Cards will be dynamically injected here -->
+                </div>
+            </section>
+
+            <!-- 2. DETAILS PAGE VIEW -->
+            <section id="page-details" class="page">
+                <button class="btn btn-secondary" onclick="app.navigateTo('explore')" style="margin-bottom: 1.5rem;">
+                    <i data-lucide="arrow-left"></i> Back to Explore
+                </button>
+                <div class="detail-grid">
+                    <div>
+                        <img id="detail-image" class="detail-img" src="" alt="Homestay Banner">
+                        
+                        <div class="detail-header-row">
+                            <div>
+                                <h1 id="detail-title" class="detail-title">Homestay Title</h1>
+                                <div id="detail-location" class="detail-location">
+                                    <i data-lucide="map-pin"></i> <span>Location</span>
+                                </div>
+                            </div>
+                            <div class="user-badge" style="font-size: 1.1rem; padding: 0.5rem 1rem;">
+                                <i data-lucide="star" class="star-icon"></i> <span id="detail-rating">4.8</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-section">
+                            <h3 class="detail-section-title">Description</h3>
+                            <p id="detail-desc" class="detail-desc">Full description of homestay goes here.</p>
+                        </div>
+
+                        <div class="detail-section">
+                            <h3 class="detail-section-title">Eco-Friendly Initiatives</h3>
+                            <div id="detail-eco-tags" class="card-badges" style="margin-top: 0.5rem;">
+                                <!-- Eco tags -->
+                            </div>
+                        </div>
+
+                        <div class="detail-section">
+                            <h3 class="detail-section-title">Local Activities & Workshops</h3>
+                            <div id="detail-activities" class="activity-list">
+                                <!-- Activity cards -->
+                            </div>
+                        </div>
+
+                        <!-- Sentiment Summary of Reviews -->
+                        <div class="detail-section">
+                            <h3 class="detail-section-title">Visitor Feedback Analysis</h3>
+                            <div class="reviews-summary-box glass-panel">
+                                <div class="rating-score-circle">
+                                    <span class="rating-big-num" id="feedback-avg-rating">4.8</span>
+                                    <span style="font-size: 0.85rem; color:var(--text-muted);">out of 5 stars</span>
+                                </div>
+                                <div class="sentiment-meter-col">
+                                    <h4 style="font-size: 0.95rem; margin-bottom: 0.4rem;">AI Sentiment Distribution:</h4>
+                                    <div class="sentiment-bar-row">
+                                        <span class="sentiment-bar-label">Positive</span>
+                                        <div class="sentiment-bar-outer">
+                                            <div id="gauge-pos-bar" class="sentiment-bar-inner pos" style="width: 0%;"></div>
+                                        </div>
+                                        <span class="sentiment-percentage" id="gauge-pos-pct">0%</span>
+                                    </div>
+                                    <div class="sentiment-bar-row">
+                                        <span class="sentiment-bar-label">Neutral</span>
+                                        <div class="sentiment-bar-outer">
+                                            <div id="gauge-neu-bar" class="sentiment-bar-inner neu" style="width: 0%;"></div>
+                                        </div>
+                                        <span class="sentiment-percentage" id="gauge-neu-pct">0%</span>
+                                    </div>
+                                    <div class="sentiment-bar-row">
+                                        <span class="sentiment-bar-label">Negative</span>
+                                        <div class="sentiment-bar-outer">
+                                            <div id="gauge-neg-bar" class="sentiment-bar-inner neg" style="width: 0%;"></div>
+                                        </div>
+                                        <span class="sentiment-percentage" id="gauge-neg-pct">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="detail-reviews-list">
+                                <!-- Individual reviews -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Sticky Booking Panel -->
+                    <div>
+                        <div class="booking-widget glass-panel">
+                            <div class="widget-price">
+                                $<span id="widget-price-num">80</span> <span>/ night</span>
+                            </div>
+                            <div class="booking-form">
+                                <div class="form-group">
+                                    <label class="form-label" for="book-check-in">Check In</label>
+                                    <input type="date" id="book-check-in" class="form-control select-control" onchange="app.updateBookingPrice()">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="book-check-out">Check Out</label>
+                                    <input type="date" id="book-check-out" class="form-control select-control" onchange="app.updateBookingPrice()">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="book-guests">Guests</label>
+                                    <select id="book-guests" class="form-control select-control" onchange="app.updateBookingPrice()">
+                                        <option value="1">1 Guest</option>
+                                        <option value="2">2 Guests</option>
+                                        <option value="3">3 Guests</option>
+                                        <option value="4">4 Guests</option>
+                                    </select>
+                                </div>
+                                <div class="total-summary">
+                                    <span>Estimated Total</span>
+                                    <span>$<span id="widget-total-price">0</span></span>
+                                </div>
+                                <button class="btn btn-primary" onclick="app.requestBooking()">
+                                    <i data-lucide="calendar-check"></i> Request Stay
+                                </button>
+                                <p id="booking-login-warning" style="font-size:0.75rem; text-align:center; color:#f87171; display:none;">Please log in as a tourist to book.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. TOURIST DASHBOARD VIEW -->
+            <section id="page-tourist-db" class="page">
+                <h1 style="font-size: 2rem; margin-bottom: 2rem;">My Travel Portal</h1>
+                <div class="dashboard-grid">
+                    <div class="dashboard-stats">
+                        <div class="stat-card glass-panel">
+                            <div class="stat-title">Total Stays</div>
+                            <div class="stat-num" id="tourist-stat-stays">0</div>
+                        </div>
+                        <div class="stat-card glass-panel">
+                            <div class="stat-title">Upcoming Trips</div>
+                            <div class="stat-num" id="tourist-stat-upcoming">0</div>
+                        </div>
+                        <div class="stat-card glass-panel">
+                            <div class="stat-title">Completed Stays</div>
+                            <div class="stat-num" id="tourist-stat-completed">0</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-row" style="grid-template-columns: 1fr;">
+                        <div class="dashboard-panel glass-panel">
+                            <h2 class="panel-title">Your Reservations History</h2>
+                            <div id="tourist-bookings-list" class="dashboard-list">
+                                <!-- Bookings -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. HOST/OWNER DASHBOARD VIEW -->
+            <section id="page-owner-db" class="page">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2rem;">
+                    <h1 style="font-size: 2rem;">Host Dashboard</h1>
+                    <button class="btn btn-primary" onclick="app.showAddHomestayModal()">
+                        <i data-lucide="plus"></i> List New Homestay
+                    </button>
+                </div>
+
+                <div class="dashboard-grid">
+                    <!-- Analytics Grid -->
+                    <div class="dashboard-stats">
+                        <div class="stat-card glass-panel">
+                            <div class="stat-title">Total Bookings Completed</div>
+                            <div class="stat-num" id="owner-stat-bookings">0</div>
+                        </div>
+                        <div class="stat-card glass-panel">
+                            <div class="stat-title">Total Revenue</div>
+                            <div class="stat-num" id="owner-stat-revenue">$0</div>
+                        </div>
+                    </div>
+
+                    <!-- AI Demand prediction panel -->
+                    <div class="ai-prediction-widget">
+                        <div class="prediction-header">
+                            <div>
+                                <h3 style="font-size: 1.15rem; font-weight:700;">AI Peak Booking Demand Forecast</h3>
+                                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.2rem;">Predictions for next 6 months based on historical seasonal trends, ratings, and pricing.</p>
+                            </div>
+                            <span class="prediction-title-badge">
+                                <i data-lucide="brain"></i> ML Model Active
+                            </span>
+                        </div>
+                        <div id="owner-demand-predictions" class="predictions-flex">
+                            <!-- Injected by JavaScript -->
+                        </div>
+                    </div>
+
+                    <div class="dashboard-row">
+                        <!-- Left Pane: Bookings & Stays -->
+                        <div style="display:flex; flex-direction:column; gap:2rem;">
+                            <div class="dashboard-panel glass-panel">
+                                <h2 class="panel-title">Pending Booking Requests</h2>
+                                <div id="owner-pending-bookings" class="dashboard-list">
+                                    <!-- Injected bookings -->
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-panel glass-panel">
+                                <h2 class="panel-title">Your Listed Homestays</h2>
+                                <div id="owner-homestays-list" class="dashboard-list">
+                                    <!-- List of owned homestays -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Pane: Analytics & Revenue Graph -->
+                        <div style="display:flex; flex-direction:column; gap:2rem;">
+                            <div class="dashboard-panel glass-panel">
+                                <h2 class="panel-title">Revenue Analysis</h2>
+                                <div class="chart-container" id="revenue-chart-container">
+                                    <!-- Injected SVG Chart -->
+                                </div>
+                            </div>
+
+                            <div class="dashboard-panel glass-panel">
+                                <h2 class="panel-title">Host Reviews Sentiment</h2>
+                                <div id="owner-reviews-sentiment" class="sentiment-meter-col">
+                                    <!-- Sentiment counts -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. AUTH PAGE (LOGIN / REGISTER) -->
+            <section id="page-auth" class="page">
+                <div class="auth-container glass-panel">
+                    <div class="auth-header">
+                        <i data-lucide="lock" style="width: 40px; height: 40px; color: var(--primary); margin-bottom: 0.5rem;"></i>
+                        <h2 id="auth-title">Welcome Back</h2>
+                        <p id="auth-subtitle" class="auth-subtitle">Login to book rooms and see recommendations</p>
+                    </div>
+
+                    <div id="auth-alert" class="alert-message error"></div>
+
+                    <form id="auth-form" onsubmit="app.handleAuthSubmit(event)">
+                        <!-- Sign Up Only Fields -->
+                        <div class="form-group signup-only" style="display: none; margin-bottom: 1.2rem;">
+                            <label class="form-label" for="auth-name">Full Name</label>
+                            <input type="text" id="auth-name" class="form-control select-control" placeholder="John Doe">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1.2rem;">
+                            <label class="form-label" for="auth-email">Email Address</label>
+                            <input type="email" id="auth-email" class="form-control select-control" placeholder="john@example.com" required>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1.2rem;">
+                            <label class="form-label" for="auth-password">Password</label>
+                            <input type="password" id="auth-password" class="form-control select-control" placeholder="••••••••" required>
+                        </div>
+
+                        <!-- Sign Up Only Role Selection -->
+                        <div class="form-group signup-only" style="display: none; margin-bottom: 1.5rem;">
+                            <label class="form-label">Register As</label>
+                            <div class="auth-role-select">
+                                <label class="role-radio-label active" id="label-role-tourist">
+                                    <input type="radio" name="auth-role" value="tourist" checked class="role-radio-input" onchange="app.toggleRoleSelect('tourist')">
+                                    <i data-lucide="compass" style="width:16px; height:16px; vertical-align:middle;"></i> Tourist
+                                </label>
+                                <label class="role-radio-label" id="label-role-owner">
+                                    <input type="radio" name="auth-role" value="owner" class="role-radio-input" onchange="app.toggleRoleSelect('owner')">
+                                    <i data-lucide="home" style="width:16px; height:16px; vertical-align:middle;"></i> Homestay Owner
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.8rem;" id="auth-submit-btn">
+                            Sign In
+                        </button>
+                    </form>
+
+                    <div style="margin-top: 1.5rem; text-align: center; font-size: 0.9rem;">
+                        <span id="auth-toggle-text">Don't have an account?</span>
+                        <a id="auth-toggle-link" class="auth-toggle-link" onclick="app.toggleAuthMode()">Sign Up</a>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Dynamic Modal Overlay - For booking confirmation or adding items -->
+        <div class="modal-overlay" id="modal-add-homestay" onclick="if(event.target === this) app.closeModal('add-homestay')">
+            <div class="modal-content glass-panel">
+                <button class="modal-close" onclick="app.closeModal('add-homestay')">&times;</button>
+                <h2 class="modal-title">List Your Homestay</h2>
+                <div id="modal-alert-homestay" class="alert-message"></div>
+                <form onsubmit="app.submitNewHomestay(event)">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label class="form-label" for="new-h-name">Homestay Name</label>
+                        <input type="text" id="new-h-name" class="form-control select-control" placeholder="E.g. Green Treehouse Eco-Stay" required>
+                    </div>
+                    <div class="form-row-2" style="margin-bottom: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label" for="new-h-location">Location</label>
+                            <select id="new-h-location" class="form-control select-control" required>
+                                <option value="Himalayas">Himalayas</option>
+                                <option value="Kerala Backwaters">Kerala Backwaters</option>
+                                <option value="Goa Beach">Goa Beach</option>
+                                <option value="Rajasthan Desert">Rajasthan Desert</option>
+                                <option value="Western Ghats">Western Ghats</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="new-h-price">Price / Night ($)</label>
+                            <input type="number" id="new-h-price" class="form-control select-control" placeholder="85" min="20" max="500" required>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label class="form-label" for="new-h-desc">Description</label>
+                        <textarea id="new-h-desc" class="form-control select-control" style="height: 80px; resize:none;" placeholder="Tell travelers about your eco-initiatives, local activities, etc." required></textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label class="form-label" for="new-h-amenities">Amenities (Comma separated)</label>
+                        <input type="text" id="new-h-amenities" class="form-control select-control" placeholder="WiFi, Kitchen, Hot Water, Lake View">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label class="form-label" for="new-h-eco">Eco-Friendly Features (Comma separated)</label>
+                        <input type="text" id="new-h-eco" class="form-control select-control" placeholder="Solar Power, Organic Garden, Zero Waste">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label class="form-label" for="new-h-image">Image URL</label>
+                        <input type="url" id="new-h-image" class="form-control select-control" placeholder="https://unsplash.com/photo...">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Create Listing</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Activity Modal -->
+        <div class="modal-overlay" id="modal-add-activity" onclick="if(event.target === this) app.closeModal('add-activity')">
+            <div class="modal-content glass-panel">
+                <button class="modal-close" onclick="app.closeModal('add-activity')">&times;</button>
+                <h2 class="modal-title">Add Local Activity</h2>
+                <div id="modal-alert-activity" class="alert-message"></div>
+                <form onsubmit="app.submitNewActivity(event)">
+                    <input type="hidden" id="activity-homestay-id">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label class="form-label" for="new-act-name">Activity Name</label>
+                        <input type="text" id="new-act-name" class="form-control select-control" placeholder="E.g. Traditional Clay Weaving" required>
+                    </div>
+                    <div class="form-row-2" style="margin-bottom: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label" for="new-act-type">Activity Type</label>
+                            <select id="new-act-type" class="form-control select-control" required>
+                                <option value="Trekking">Trekking</option>
+                                <option value="Cooking">Cooking</option>
+                                <option value="Farming">Farming</option>
+                                <option value="Crafts">Crafts</option>
+                                <option value="Local Culture">Local Culture</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="new-act-price">Price ($)</label>
+                            <input type="number" id="new-act-price" class="form-control select-control" placeholder="15" min="0" required>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label class="form-label" for="new-act-desc">Description</label>
+                        <textarea id="new-act-desc" class="form-control select-control" style="height: 80px; resize:none;" placeholder="Describe what the tourist will do, learn, and experience." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Add Activity</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Review Modal -->
+        <div class="modal-overlay" id="modal-add-review" onclick="if(event.target === this) app.closeModal('add-review')">
+            <div class="modal-content glass-panel">
+                <button class="modal-close" onclick="app.closeModal('add-review')">&times;</button>
+                <h2 class="modal-title">Write a Review</h2>
+                <div id="modal-alert-review" class="alert-message"></div>
+                <form onsubmit="app.submitReview(event)">
+                    <input type="hidden" id="review-homestay-id">
+                    <div class="form-group" style="margin-bottom: 1.2rem; align-items:center;">
+                        <label class="form-label">Your Rating</label>
+                        <div class="star-rating-input" id="star-rating-buttons">
+                            <button type="button" class="star-btn" onclick="app.setRatingValue(1)">★</button>
+                            <button type="button" class="star-btn" onclick="app.setRatingValue(2)">★</button>
+                            <button type="button" class="star-btn" onclick="app.setRatingValue(3)">★</button>
+                            <button type="button" class="star-btn" onclick="app.setRatingValue(4)">★</button>
+                            <button type="button" class="star-btn" onclick="app.setRatingValue(5)">★</button>
+                        </div>
+                        <input type="hidden" id="new-review-rating" value="0" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label class="form-label" for="new-review-text">Review Comments</label>
+                        <textarea id="new-review-text" class="form-control select-control" style="height: 100px; resize:none;" placeholder="Describe your experience! Our AI will analyze the sentiment of your comments." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Review</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- FLOATING CHATBOT WIDGET -->
+        <div class="chatbot-bubble" onclick="app.toggleChatbot()">
+            <i data-lucide="message-square"></i>
+        </div>
+
+        <div class="chatbot-drawer glass-panel" id="chatbot-drawer">
+            <div class="chatbot-header">
+                <div class="chatbot-title">
+                    <i data-lucide="leaf" style="color:var(--primary);"></i> EcoStay AI Assistant
+                </div>
+                <button class="chatbot-close-btn" onclick="app.toggleChatbot()">&times;</button>
+            </div>
+            <div class="chatbot-messages" id="chatbot-messages">
+                <div class="chat-bubble bot">
+                    Hello traveler! I am your Eco-Homestay Guide. Ask me about homestays, green living tips, local activities, or how to manage bookings!
+                </div>
+            </div>
+            <div class="chatbot-input-area">
+                <input type="text" id="chatbot-text-input" class="chatbot-input" placeholder="Type a message..." onkeydown="if(event.key === 'Enter') app.sendChatMessage()">
+                <button class="btn btn-primary" onclick="app.sendChatMessage()" style="padding: 0.5rem; border-radius: 8px;">
+                    <i data-lucide="send" style="width:16px; height:16px;"></i>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript script link -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
