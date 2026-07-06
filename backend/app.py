@@ -4,13 +4,27 @@ from flask_cors import CORS
 from database import db, User, Homestay, LocalActivity, Booking, Review
 from datetime import datetime, date
 from ml_engine import RecommendationEngine, SentimentAnalyzer, DemandPredictor, TravelChatbot
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Configure application
 app = Flask(__name__, template_folder='templates', static_folder='static')
-app.config['SECRET_KEY'] = 'eco-homestay-super-secret-key-12345'
-# Use local SQLite database
-db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'eco_tourism.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'eco-homestay-super-secret-key-12345')
+
+# Database configuration
+database_url = os.getenv('DATABASE_URL')
+if database_url:
+    # SQLAlchemy requires 'postgresql://' instead of 'postgres://' which some cloud providers output
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    # Use local SQLite database as fallback
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'eco_tourism.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Enable CORS for frontend integration

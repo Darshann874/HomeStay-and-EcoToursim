@@ -30,7 +30,7 @@ EcoStay is a full-stack platform designed to help rural and eco-friendly homesta
 ## Technology Stack
 * **Backend:** Flask (Python), Flask-CORS, Flask-SQLAlchemy
 * **Frontend:** Single Page Application (HTML5, CSS3, Modern ES6 JavaScript) featuring a premium glassmorphic dark theme and custom responsive SVG data charts.
-* **Database:** SQLite (SQLAlchemy ORM - easily configurable for MySQL/PostgreSQL)
+* **Database:** PostgreSQL via Supabase (production cloud instance) with SQLite (local fallback) using Flask-SQLAlchemy ORM.
 * **AI/ML:** Python, Scikit-learn, NumPy, Pandas
 
 ---
@@ -55,6 +55,24 @@ eco-homestay/
 
 ---
 
+## Database Schema & Design
+
+For Week 5, the application uses **PostgreSQL** hosted on **Supabase** as the primary persistent database. PostgreSQL was selected because our data contains highly structured and interconnected entities (e.g., users, homestays, bookings, reviews) that benefit from relational integrity, foreign key constraints, and powerful query joins.
+
+The database model consists of the following 5 entities:
+1. **User**: Represents tourists and homestay owners (hosts).
+2. **Homestay**: Represents listing profiles owned by hosts, containing location, pricing, and amenities.
+3. **LocalActivity**: Represents host-led workshops (trekking, cooking, etc.) tied to a specific homestay.
+4. **Booking**: Stores stay reservations, total prices, and booking statuses.
+5. **Review**: Stores traveler feedback, star ratings, and AI-predicted sentiment scores/labels.
+
+### Entity-Relationship (ER) Diagram
+Below is the ER diagram showing table fields and relationship mappings:
+
+![EcoStay Database Schema Diagram](W5_SchemaDiagram_26100906.png)
+
+---
+
 ## Getting Started
 
 ### 1. Set Up the Environment
@@ -76,13 +94,26 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Train AI Models & Seed Database
-Run the training script to generate the synthetic historical dataset, fit the ML classifiers, save model weights, and initialize the SQLite database:
+### 2. Set Up the Database (Supabase PostgreSQL)
+1. Go to [supabase.com](https://supabase.com) and sign up for a free account.
+2. Create a new project. Choose a secure database password and select a region close to you.
+3. Once the project is created, navigate to **Project Settings** → **Database**.
+4. Scroll down to **Connection String** and select the **URI** format.
+5. Copy the connection string. It will look like this:
+   `postgresql://postgres.[username]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres`
+6. Create a `.env` file in the `backend/` directory of your project by copying `.env.example`:
+   `cp backend/.env.example backend/.env`
+7. Paste your connection string as the value for `DATABASE_URL` in your `.env` file. Be sure to replace `[password]` with your actual database password.
+
+*Note: If no `DATABASE_URL` is configured in the `.env` file, the application will automatically fall back to using a local SQLite database (`eco_tourism.db`).*
+
+### 3. Train AI Models & Seed Database
+Run the training script to generate the synthetic historical dataset, fit the ML classifiers, save model weights, and initialize the database (this will automatically create and seed all tables in your cloud database if `DATABASE_URL` is configured):
 ```bash
 python train_models.py
 ```
 
-### 3. Run the Flask Server
+### 4. Run the Flask Server
 Start the development server:
 ```bash
 python app.py
